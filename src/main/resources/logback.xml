@@ -6,17 +6,7 @@
         </encoder>
     </appender>
 
-    <!-- Configure the Sentry appender, overriding the logging threshold to the WARN level -->
-    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
-        <options>
-            <enabled>false</enabled>
-        </options>
-    </appender>
-
-    <!-- Enable the Console and Sentry appenders, Console is provided as an example
- of a non-Sentry logger that is set to a different logging threshold -->
     <root level="INFO">
         <appender-ref ref="Console" />
-        <appender-ref ref="Sentry" />
     </root>
 </configuration>

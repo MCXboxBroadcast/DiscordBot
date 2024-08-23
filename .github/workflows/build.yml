@@ -28,19 +28,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Build GeyserBot
+      - name: Build DiscordBot
         uses: gradle/gradle-build-action@v2
         with:
           arguments: build
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v3
         if: success()
         with:
-          name: GeyserBot
-          path: build/libs/GeyserBot.jar
+          name: DiscordBot
+          path: build/libs/DiscordBot.jar
 
       # Docker image build
       - name: Fix Docker environment variables

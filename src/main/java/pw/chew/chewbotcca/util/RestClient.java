@@ -42,7 +42,7 @@ import java.time.Duration;
  */
 public class RestClient {
     public static final String JSON = "application/json; charset=utf-8";
-    public static final String USER_AGENT = "GeyserMC-DiscordBot/1.0 (JDA; +https://geysermc.org) DBots/739572267855511652";
+    public static final String USER_AGENT = "rtm516-DiscordBot/1.0 (JDA; +https://rtm516.co.uk) DBots/1276625642645094400";
 
     private static final HttpClient client = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
