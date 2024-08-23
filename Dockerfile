@@ -1,6 +1,7 @@
 FROM eclipse-temurin:17-alpine
 
-RUN mkdir -p /opt/app && \
+RUN adduser -h /opt/app -H -D app && \
+    mkdir -p /opt/app && \
     chown app:app /opt/app
 
 USER app:app
