@@ -83,4 +83,9 @@ public abstract class AbstractStorageManager {
      * @return List of the Guilds {@link Role} marked as persistent for the {@link Member}
      */
     public abstract List<Role> getPersistentRoles(Member member);
+
+    public abstract String getGithubUsername(long user);
+    public abstract long getDiscordId(String username);
+
+    public abstract void setGithubUsername(long user, String username);
 }

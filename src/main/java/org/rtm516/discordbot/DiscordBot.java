@@ -25,11 +25,13 @@
 
 package org.rtm516.discordbot;
 
+import com.apollographql.java.client.ApolloClient;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
 import com.jagrosh.jdautilities.command.ContextMenu;
 import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
+import com.rtm516.discordbot.graphql.SponsorsQuery;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -38,6 +40,7 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import net.dv8tion.jda.api.utils.messages.MessageRequest;
+import org.rtm516.discordbot.http.Server;
 import org.rtm516.discordbot.listeners.*;
 import org.rtm516.discordbot.storage.AbstractStorageManager;
 import org.rtm516.discordbot.storage.StorageType;
@@ -47,6 +50,8 @@ import org.rtm516.discordbot.util.PropertiesManager;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
 import org.reflections.Reflections;
+import org.rtm516.discordbot.util.Sponsor;
+import org.rtm516.discordbot.util.SponsorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +78,7 @@ public class DiscordBot {
 
     private static JDA jda;
     private static GitHub github;
+    private static Server httpServer;
 
     static {
         // Gathers all commands from "commands" package.
@@ -218,6 +224,16 @@ public class DiscordBot {
 
         // Register listeners
         jda.addEventListener();
+
+        SponsorUtil.init();
+
+        try {
+            httpServer = new Server();
+            httpServer.start();
+        } catch (Exception e) {
+            // TODO
+            e.printStackTrace();
+        }
     }
 
     public static JDA getJDA() {
@@ -233,11 +249,13 @@ public class DiscordBot {
     }
 
     public static void shutdown() {
-        DiscordBot.LOGGER.info("Shutting down storage...");
+        LOGGER.info("Shutting down storage...");
         storageManager.closeStorage();
-        DiscordBot.LOGGER.info("Shutting down thread pool...");
+        LOGGER.info("Shutting down thread pool...");
         generalThreadPool.shutdown();
-        DiscordBot.LOGGER.info("Finished shutdown, exiting!");
+        LOGGER.info("Shutting http server...");
+        httpServer.stop();
+        LOGGER.info("Finished shutdown, exiting!");
         System.exit(0);
     }
 }

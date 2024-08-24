@@ -89,4 +89,12 @@ public class PropertiesManager {
     public static String getGithubToken() {
         return properties.getProperty("github-token");
     }
+
+    public static String getGithubClientId() {
+        return properties.getProperty("github-oauth-id");
+    }
+
+    public static String getGithubClientSecret() {
+        return properties.getProperty("github-oauth-secret");
+    }
 }

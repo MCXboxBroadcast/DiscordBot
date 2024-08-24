@@ -52,6 +52,8 @@ public class MySQLStorageManager extends AbstractStorageManager {
         Statement createTables = connection.createStatement();
         createTables.executeUpdate("CREATE TABLE IF NOT EXISTS `preferences` (`id` INT NOT NULL AUTO_INCREMENT, `server` BIGINT NOT NULL, `key` VARCHAR(32), `value` TEXT NOT NULL, PRIMARY KEY(`id`), UNIQUE KEY `pref_constraint` (`server`,`key`));");
         createTables.executeUpdate("CREATE TABLE IF NOT EXISTS `persistent_roles` (`id` INT NOT NULL AUTO_INCREMENT, `server` BIGINT NOT NULL, `user` BIGINT NOT NULL, `role` BIGINT NOT NULL, PRIMARY KEY(`id`), UNIQUE KEY `role_constraint` (`server`,`user`,`role`));");
+        createTables.executeUpdate("CREATE TABLE IF NOT EXISTS `github_links` (`id` INT NOT NULL AUTOINCREMENT, `user` BIGINT NOT NULL, `github` VARCHAR(32), PRIMARY KEY(`id`), UNIQUE KEY `github_constraint` (`user`,`github`));");
+
         createTables.close();
     }
 
@@ -138,5 +140,49 @@ public class MySQLStorageManager extends AbstractStorageManager {
         } catch (SQLException ignored) { }
 
         return roles;
+    }
+
+    @Override
+    public String getGithubUsername(long user) {
+        checkConnection();
+        try {
+            Statement getPreferenceValue = connection.createStatement();
+            ResultSet rs = getPreferenceValue.executeQuery("SELECT `github` FROM `github_links` WHERE `user`=" + user + ";");
+
+            if (rs.next()) {
+                return rs.getString("github");
+            }
+
+            getPreferenceValue.close();
+        } catch (SQLException ignored) { }
+
+        return null;
+    }
+
+    @Override
+    public long getDiscordId(String username) {
+        checkConnection();
+        try {
+            Statement getPreferenceValue = connection.createStatement();
+            ResultSet rs = getPreferenceValue.executeQuery("SELECT `user` FROM `github_links` WHERE `github`='" + username + "';");
+
+            if (rs.next()) {
+                return rs.getLong("user");
+            }
+
+            getPreferenceValue.close();
+        } catch (SQLException ignored) { }
+
+        return 0L;
+    }
+
+    @Override
+    public void setGithubUsername(long user, String username) {
+        checkConnection();
+        try {
+            Statement addGithubLink = connection.createStatement();
+            addGithubLink.executeUpdate("INSERT INTO `github_links` (`user`, `github`) VALUES (" + user + ", '" + username + "') ON DUPLICATE KEY UPDATE `github`='" + username + "';");
+            addGithubLink.close();
+        } catch (SQLException ignored) { }
     }
 }

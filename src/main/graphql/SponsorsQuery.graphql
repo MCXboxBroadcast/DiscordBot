@@ -1,0 +1,44 @@
+query SponsorsQuery($username: String!, $count: Int!, $cursor: String!) {
+  user(login: $username) {
+    sponsors(first: $count, after: $cursor) {
+      totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      nodes {
+        __typename
+        ... on User {
+          login
+          sponsorshipsAsSponsor(first: 1) {
+            nodes {
+              isActive
+              isOneTimePayment
+              tier {
+                monthlyPriceInCents
+              }
+              tierSelectedAt
+              createdAt
+            }
+            totalRecurringMonthlyPriceInCents
+          }
+        }
+        ... on Organization {
+          login
+          sponsorshipsAsSponsor(first: 1) {
+            nodes {
+              isActive
+              isOneTimePayment
+              tier {
+                monthlyPriceInCents
+              }
+              tierSelectedAt
+              createdAt
+            }
+            totalRecurringMonthlyPriceInCents
+          }
+        }
+      }
+    }
+  }
+}
