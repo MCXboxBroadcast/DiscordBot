@@ -140,7 +140,8 @@ public class SponsorUtil {
         if (sponsor.amount() >= DONATE_MIN) {
             Member member = guild.getMemberById(getDiscord(sponsor.username()));
             Role role = guild.getRoleById(DONATE_ROLE);
-            if (member != null) {
+            // Only give the role if the user doesn't already have it
+            if (member != null && !member.getRoles().contains(role)) {
                 guild.addRoleToMember(member, role).queue();
                 member.getUser().openPrivateChannel().queue(channel -> channel.sendMessage("Thank you for sponsoring me. You have been given the " + role.getName() + " role in the " + guild.getName() + " Discord server!").queue());
             }
@@ -181,7 +182,7 @@ public class SponsorUtil {
 
             DiscordBot.storageManager.setGithubUsername(userId, ghUsername);
 
-            return "Successfully linked your github account " + ghUsername + " with your discord account @" + DiscordBot.getJDA().getUserById(userId).getName();
+            return "Successfully linked your GitHub account " + ghUsername + " with your Discord account @" + DiscordBot.getJDA().getUserById(userId).getName();
         } catch (Exception e) {
             return "An error occurred while linking your account";
         }

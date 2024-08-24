@@ -30,7 +30,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.time.Instant;
-import java.util.Collection;
 
 public record Sponsor(
         String type,
