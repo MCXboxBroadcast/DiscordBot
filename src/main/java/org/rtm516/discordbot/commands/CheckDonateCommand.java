@@ -67,9 +67,10 @@ public class CheckDonateCommand extends SlashCommand {
                 interactionHook.editOriginalEmbeds(new EmbedBuilder()
                         .setTitle("Active Sponsorship Found!")
                         .addField("Github Username", foundSponsor.get().username(), true)
-                        .addField("Amount", "$" + String.format("%.02f", foundSponsor.get().amount()), true)
+                        .addField("Amount", "$" + String.format("%.02f", foundSponsor.get().amount()) + (foundSponsor.get().amount() == 0 ? " (still processing, try again shortly)" : ""), true)
                         .addField("Re-occuring", String.valueOf(!foundSponsor.get().oneTime()), true)
                         .addField("Started", TimeFormat.DATE_TIME_SHORT.format(foundSponsor.get().started()), true)
+                        .addField("Eligible for role", String.valueOf(foundSponsor.get().amount() >= SponsorUtil.DONATE_MIN), true)
                         .setColor(BotColors.SUCCESS.getColor())
                         .build()).queue();
 

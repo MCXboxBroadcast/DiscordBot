@@ -10,7 +10,7 @@ query SponsorsQuery($username: String!, $count: Int!, $cursor: String!) {
         __typename
         ... on User {
           login
-          sponsorshipsAsSponsor(first: 1) {
+          sponsorshipsAsSponsor(first: 1, orderBy: { field: CREATED_AT, direction: DESC }) {
             nodes {
               isActive
               isOneTimePayment
@@ -25,7 +25,7 @@ query SponsorsQuery($username: String!, $count: Int!, $cursor: String!) {
         }
         ... on Organization {
           login
-          sponsorshipsAsSponsor(first: 1) {
+          sponsorshipsAsSponsor(first: 1, orderBy: { field: CREATED_AT, direction: DESC }) {
             nodes {
               isActive
               isOneTimePayment

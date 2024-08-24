@@ -29,6 +29,7 @@ import com.apollographql.java.client.ApolloClient;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.rtm516.discordbot.graphql.SponsorsQuery;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
@@ -103,6 +104,28 @@ public class SponsorUtil {
                     donateChannel.sendMessageEmbeds(sponsor.toEmbed()).queue();
 
                     checkAdd(donateChannel.getGuild(), sponsor);
+                }
+            }
+
+            List<String> usernames = sponsors.stream().map(Sponsor::username).toList();
+            List<String> lastUsernames = lastSponsors.stream().map(Sponsor::username).toList();
+
+            // Remove all sponsors that are no longer sponsoring
+            for (String username : lastUsernames) {
+                if (!usernames.contains(username)) {
+                    TextChannel donateChannel = DiscordBot.getJDA().getTextChannelById(DONATE_CHANNEL);
+                    donateChannel.sendMessageEmbeds(new EmbedBuilder()
+                            .setAuthor(username, "https://github.com/" + username, "https://github.com/" + username + ".png")
+                            .setDescription("Stopped sponsoring you")
+                            .setColor(BotColors.SUCCESS.getColor())
+                            .build());
+
+//                    Member member = donateChannel.getGuild().getMemberById(getDiscord(username));
+//                    Role role = donateChannel.getGuild().getRoleById(DONATE_ROLE);
+//                    if (member != null) {
+//                        donateChannel.getGuild().removeRoleFromMember(member, role).queue();
+//                        member.getUser().openPrivateChannel().queue(channel -> channel.sendMessage("Your sponsorship has expired. You have been removed from the " + role.getName() + " role in the " + donateChannel.getGuild().getName() + " Discord server!").queue());
+//                    }
                 }
             }
 
