@@ -72,7 +72,31 @@ public class Server {
     }
 
     private void respond(String message, HttpExchange exchange) throws IOException {
-        String response = "<html><body><h1>" + message + "</h1></body></html>";
+        String response = """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <meta charset='utf-8'>
+                  <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+                  <title>Sponsor Verification</title>
+                  <meta name='viewport' content='width=device-width, initial-scale=1'>
+                  <style>
+                    body {
+                      margin: 0;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                        sans-serif;
+                      -webkit-font-smoothing: antialiased;
+                      -moz-osx-font-smoothing: grayscale;
+                      display: flex;
+                      justify-content: center;
+                    }
+                  </style>
+                </head>
+                <body>
+                    <h1>%s</h1>
+                </body>
+                </html>""".formatted(message);
 
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
