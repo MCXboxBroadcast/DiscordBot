@@ -46,8 +46,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class SponsorUtil {
-    private static final long DONATE_CHANNEL = 349264069007638530L;
-    public static final long DONATE_ROLE = 1276701848417603645L;
+    private static final long DONATE_CHANNEL = 1139856745007681587L;
+    public static final long DONATE_ROLE = 1144374185985065164L;
     public static final float DONATE_MIN = 5f;
 
     private static final ApolloClient apolloClient;
