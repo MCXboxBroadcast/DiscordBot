@@ -28,7 +28,6 @@ package org.rtm516.discordbot.commands;
 import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.utils.TimeFormat;
 import org.rtm516.discordbot.util.BotColors;
@@ -40,7 +39,7 @@ import java.util.Optional;
 public class CheckDonateCommand extends SlashCommand {
     public CheckDonateCommand() {
         this.name = "checkdonate";
-        this.help = "Checks if your linked github account has an active sponsorship";
+        this.help = "Checks if your linked GitHub account has an active sponsorship";
         this.guildOnly = true;
     }
 
@@ -52,8 +51,8 @@ public class CheckDonateCommand extends SlashCommand {
         String ghUsername = SponsorUtil.getGithub(event.getUser());
         if (ghUsername == null) {
             interactionHook.editOriginalEmbeds(new EmbedBuilder()
-                    .setTitle("No linked github account found")
-                    .setDescription("Please link your github account on " + SponsorUtil.getGithubLink(event.getUser()))
+                    .setTitle("No linked GitHub account found")
+                    .setDescription("Please link your GitHub account on " + SponsorUtil.getGithubLink(event.getUser()))
                     .setColor(BotColors.FAILURE.getColor())
                     .build()).queue();
             return;
@@ -66,7 +65,7 @@ public class CheckDonateCommand extends SlashCommand {
             if (foundSponsor.isPresent() && foundSponsor.get().active()) {
                 interactionHook.editOriginalEmbeds(new EmbedBuilder()
                         .setTitle("Active Sponsorship Found!")
-                        .addField("Github Username", foundSponsor.get().username(), true)
+                        .addField("GitHub Username", foundSponsor.get().username(), true)
                         .addField("Amount", "$" + String.format("%.02f", foundSponsor.get().amount()) + (foundSponsor.get().amount() == 0 ? " (still processing, try again shortly)" : ""), true)
                         .addField("Re-occuring", String.valueOf(!foundSponsor.get().oneTime()), true)
                         .addField("Started", TimeFormat.DATE_TIME_SHORT.format(foundSponsor.get().started()), true)
@@ -78,7 +77,7 @@ public class CheckDonateCommand extends SlashCommand {
             } else {
                 interactionHook.editOriginalEmbeds(new EmbedBuilder()
                         .setTitle("No active sponsorship found")
-                        .addField("Github Username", ghUsername, true)
+                        .addField("GitHub Username", ghUsername, true)
                         .setColor(BotColors.FAILURE.getColor())
                         .build()).queue();
             }
