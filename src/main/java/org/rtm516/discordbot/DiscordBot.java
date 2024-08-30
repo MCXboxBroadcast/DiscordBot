@@ -211,7 +211,6 @@ public class DiscordBot {
                             new FileHandler(),
                             new ShutdownHandler(),
                             new BadLinksHandler(),
-                            new HelpHandler(),
                             new DeleteHandler(),
                             new AutoModHandler(),
                             client.build(),
