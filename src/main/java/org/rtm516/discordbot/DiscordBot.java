@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 GeyserMC. http://geysermc.org
+ * Copyright (c) 2020-2025 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,13 +25,11 @@
 
 package org.rtm516.discordbot;
 
-import com.apollographql.java.client.ApolloClient;
 import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
 import com.jagrosh.jdautilities.command.ContextMenu;
 import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
-import com.rtm516.discordbot.graphql.SponsorsQuery;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -50,7 +48,6 @@ import org.rtm516.discordbot.util.PropertiesManager;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
 import org.reflections.Reflections;
-import org.rtm516.discordbot.util.Sponsor;
 import org.rtm516.discordbot.util.SponsorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -106,6 +104,11 @@ public class DiscordBot {
                 if (theClass.getName().contains("SubCommand")) {
                     continue;
                 }
+                // Don't load abstract classes
+                if (Modifier.isAbstract(theClass.getModifiers())) {
+                    continue;
+                }
+
                 slashCommands.add(theClass.getDeclaredConstructor().newInstance());
                 LoggerFactory.getLogger(theClass).debug("Loaded SlashCommand Successfully!");
             }

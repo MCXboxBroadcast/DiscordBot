@@ -164,6 +164,9 @@ cmake-build-*/
 # IntelliJ
 out/
 
+# VSCode
+.vscode/
+
 # mpeltonen/sbt-idea plugin
 .idea_modules/
 
@@ -194,6 +197,7 @@ fabric.properties
 
 .idea/*
 !.idea/copyright/
+!.idea/scopes/
 
 ### NetBeans ###
 **/nbproject/private/
@@ -237,3 +241,4 @@ gradle-app.setting
 # End of https://www.toptal.com/developers/gitignore/api/git,java,gradle,eclipse,netbeans,jetbrains+all,visualstudiocode.
 
 bot.properties
+bot

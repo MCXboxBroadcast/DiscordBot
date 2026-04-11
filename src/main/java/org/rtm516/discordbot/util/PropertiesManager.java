@@ -97,4 +97,32 @@ public class PropertiesManager {
     public static String getGithubClientSecret() {
         return properties.getProperty("github-oauth-secret");
     }
+
+    /**
+     * @return Algolia Application ID
+     */
+    public static String getAlgoliaApplicationId() {
+        return properties.getProperty("algolia-application-id");
+    }
+
+    /**
+     * @return Algolia Search API Key
+     */
+    public static String getAlgoliaSearchApiKey() {
+        return properties.getProperty("algolia-search-api-key");
+    }
+
+    /**
+     * @return Algolia Index Name
+     */
+    public static String getAlgoliaIndexName() {
+        return properties.getProperty("algolia-index-name");
+    }
+
+    /**
+     * @return The Algolia site search URL
+     */
+    public static String getAlgoliaSiteSearchUrl() {
+        return properties.getProperty("algolia-site-search-url");
+    }
 }

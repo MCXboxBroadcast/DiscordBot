@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 GeyserMC. http://geysermc.org
+ * Copyright (c) 2020-2026 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,13 @@
 package org.rtm516.discordbot.listeners;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.PermissionOverride;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.attribute.ICategorizableChannel;
+import net.dv8tion.jda.api.entities.channel.attribute.IPermissionContainer;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -83,7 +89,7 @@ public class SwearHandler extends ListenerAdapter {
                     // Load the lines
                     String[] lines = new String(BotHelpers.bytesFromResource("filters/" + fileName), StandardCharsets.UTF_8).split("\n");
                     for (String line : lines) {
-                        filterPatterns.add(Pattern.compile("(^| )" + line.trim() + "( |$)", Pattern.CASE_INSENSITIVE));
+                        filterPatterns.add(Pattern.compile("(^| )" + line.trim() + "( |$)", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE));
                     }
                 }
             }
@@ -99,11 +105,36 @@ public class SwearHandler extends ListenerAdapter {
     }
 
     @Nullable
-    private Pattern checkString(String input) {
+    public static Pattern checkString(String input) {
         // TODO: Maybe only clean start and end? Then run through the same as normalInput?
         input = input.toLowerCase();
-        String cleanInput = CLEAN_PATTERN.matcher(input).replaceAll("");
-        String cleanInputSpaces = CLEAN_PATTERN.matcher(input).replaceAll(" ");
+
+        List<String> inputs = new ArrayList<>();
+
+        // Check with various cleanings
+        inputs.add(CLEAN_PATTERN.matcher(input).replaceAll(""));
+        inputs.add(CLEAN_PATTERN.matcher(input).replaceAll(" "));
+        inputs.add(normalizeInput(input));
+
+        // Also check without new lines
+        input = input.replaceAll("\n", "");
+        inputs.add(CLEAN_PATTERN.matcher(input).replaceAll(""));
+        inputs.add(CLEAN_PATTERN.matcher(input).replaceAll(" "));
+        inputs.add(normalizeInput(input));
+
+        // Loop through each pattern and see if it matches any of the cleaned inputs
+        for (Pattern filterPattern : filterPatterns) {
+            for (String cleanInput : inputs) {
+                if (filterPattern.matcher(cleanInput).find()) {
+                    return filterPattern;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static String normalizeInput(String input) {
         String normalInput = Normalizer.normalize(input, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
 
         // Find all non ascii chars and normalise them based on REPLACE_TOKENS
@@ -115,15 +146,7 @@ public class SwearHandler extends ListenerAdapter {
         }
         matcher.appendTail(sb);
 
-        normalInput = sb.toString();
-
-        for (Pattern filterPattern : filterPatterns) {
-            if (filterPattern.matcher(cleanInput).find() || filterPattern.matcher(cleanInputSpaces).find() || filterPattern.matcher(normalInput).find()) {
-                return filterPattern;
-            }
-        }
-
-        return null;
+        return sb.toString();
     }
 
     public static String getRandomNick() {
@@ -141,9 +164,28 @@ public class SwearHandler extends ListenerAdapter {
 //        handleMessageEvent(event.getMessage(), false);
 //    }
 
+    private boolean canViewChannel(Role role, @Nullable IPermissionContainer parent, PermissionOverride permissionOverride) {
+        if (permissionOverride == null || permissionOverride.getInherit().contains(Permission.VIEW_CHANNEL)) {
+            if (parent != null) {
+                return canViewChannel(role, null, parent.getPermissionOverride(role));
+            }
+            return role.getPermissions().contains(Permission.VIEW_CHANNEL);
+        }
+
+        return !permissionOverride.getDenied().contains(Permission.VIEW_CHANNEL);
+    }
+
     private void handleMessageEvent(Message message, boolean notifyUser) {
         if (message.getAuthor().isBot() || !message.isFromGuild()) {
             return;
+        }
+
+        if (message.getChannel() instanceof ICategorizableChannel channel) {
+            Role everyoneRole = message.getGuild().getPublicRole();
+            boolean canEveryoneSee = canViewChannel(everyoneRole, channel.getParentCategory(), channel.getPermissionOverride(everyoneRole));
+            if (!canEveryoneSee) return;
+        } else if (message.getChannel() instanceof ThreadChannel thread) {
+            if (!thread.isPublic()) return;
         }
 
         String disableFilter = DiscordBot.storageManager.getServerPreference(message.getGuild().getIdLong(), "disable-filter");

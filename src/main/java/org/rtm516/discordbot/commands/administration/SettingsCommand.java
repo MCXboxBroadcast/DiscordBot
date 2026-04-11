@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 GeyserMC. http://geysermc.org
+ * Copyright (c) 2020-2025 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -75,7 +75,8 @@ public class SettingsCommand extends SlashCommand {
                         .addChoice("Roles", "roles")
                         .addChoice("RSS Feeds", "rss-feeds")
                         .addChoice("Update channel", "update-channel")
-                        .addChoice("Voice Role", "voice-role"),
+                        .addChoice("Donation feeds channel", "donation-feeds-channel"),
+
                 new OptionData(OptionType.STRING, "value", "The value to set")
         );
     }

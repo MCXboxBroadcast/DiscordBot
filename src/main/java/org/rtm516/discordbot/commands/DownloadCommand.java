@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 GeyserMC. http://geysermc.org
+ * Copyright (c) 2020-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,14 @@ import com.google.common.collect.ImmutableMap;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
-import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.buttons.ButtonStyle;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.separator.Separator;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
+import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -52,11 +59,11 @@ public class DownloadCommand extends SlashCommand {
         this.help = "Sends a link to download the latest version of a program";
         this.guildOnly = false;
 
-        this.defaultDownloadOption = new DownloadOption("MCXboxBroadcast", "https://github.com/MCXboxBroadcast/Broadcaster/releases", "https://github.com/MCXboxBroadcast.png");
+        this.defaultDownloadOption = new DownloadOption("MCXboxBroadcast", "The main broadcaster that broadcasts the server", "https://github.com/MCXboxBroadcast/Broadcaster/releases", "https://github.com/MCXboxBroadcast.png");
         this.optionsToRepository = ImmutableMap.<String, DownloadOption>builder()
                 .put("mcxboxbroadcast", this.defaultDownloadOption)
-                .put("manager", new DownloadOption("MCXboxBroadcast Manager", "https://github.com/MCXboxBroadcast/Manager/releases", "https://github.com/MCXboxBroadcast.png"))
-                .put("archiver", new DownloadOption("Minecraft Bedrock Archiver", "https://github.com/MinecraftBedrockArchiver/Archiver", "https://github.com/MinecraftBedrockArchiver.png"))
+                .put("manager", new DownloadOption("MCXboxBroadcast Manager", "The donator only web UI manager for the broadcaster", "https://github.com/MCXboxBroadcast/Manager/releases", "https://github.com/MCXboxBroadcast.png"))
+                .put("archiver", new DownloadOption("Minecraft Bedrock Archiver", "This tool automatically archives the latest W10/Xbox beta, release and preview appx files from the store and other sources periodically", "https://github.com/MinecraftBedrockArchiver/Archiver", "https://github.com/MinecraftBedrockArchiver.png"))
                 .build();
 
         List<Command.Choice> choices = new ArrayList<>();
@@ -80,12 +87,9 @@ public class DownloadCommand extends SlashCommand {
 
         DownloadOption downloadOption = optionsToRepository.getOrDefault(program.toLowerCase(Locale.ROOT), this.defaultDownloadOption);
 
-        event.getMessage().replyEmbeds(new EmbedBuilder()
-                .setTitle("Download " + downloadOption.friendlyName)
-                .setDescription("Download at " + downloadOption.downloadUrl)
-                .setThumbnail(downloadOption.imageUrl)
-                .setColor(BotColors.SUCCESS.getColor())
-                .build()).queue();
+        event.getMessage().replyComponents(getEmbedContainer(downloadOption))
+                .useComponentsV2()
+                .queue();
     }
 
     @Override
@@ -94,21 +98,32 @@ public class DownloadCommand extends SlashCommand {
 
         DownloadOption downloadOption = optionsToRepository.getOrDefault(program.toLowerCase(Locale.ROOT), this.defaultDownloadOption);
 
-        event.replyEmbeds(new EmbedBuilder()
-                .setTitle("Download " + downloadOption.friendlyName)
-                .setDescription("Download at " + downloadOption.downloadUrl)
-                .setThumbnail(downloadOption.imageUrl)
-                .setColor(BotColors.SUCCESS.getColor())
-                .build()).queue();
+        event.replyComponents(getEmbedContainer(downloadOption))
+                .useComponentsV2()
+                .queue();
+    }
+
+    private Container getEmbedContainer(DownloadOption downloadOption) {
+        return Container.of(
+                Section.of(
+                        Thumbnail.fromUrl(downloadOption.imageUrl),
+                        TextDisplay.of("## " + downloadOption.friendlyName),
+                        TextDisplay.of(downloadOption.description)
+                ),
+                Separator.createDivider(Separator.Spacing.LARGE),
+                ActionRow.of(Button.of(ButtonStyle.LINK, downloadOption.downloadUrl, "Download"))
+        ).withAccentColor(BotColors.SUCCESS.getColor());
     }
 
     private static class DownloadOption {
         private final String friendlyName;
+        private final String description;
         private final String downloadUrl;
         private final String imageUrl;
 
-        public DownloadOption(String friendlyName, String downloadUrl, String imageUrl) {
+        public DownloadOption(String friendlyName, String description, String downloadUrl, String imageUrl) {
             this.friendlyName = friendlyName;
+            this.description = description;
             this.downloadUrl = downloadUrl;
             this.imageUrl = imageUrl;
         }

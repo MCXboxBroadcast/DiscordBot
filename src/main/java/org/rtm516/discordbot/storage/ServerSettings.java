@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 GeyserMC. http://geysermc.org
+ * Copyright (c) 2020-2025 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@
 package org.rtm516.discordbot.storage;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -107,6 +106,18 @@ public class ServerSettings {
     }
 
     /**
+     * Get the donation feeds channel for the selected guild
+     *
+     * @param guild ID of the guild to get the channel for
+     * @return The {@link TextChannel} for logs
+     * @throws IllegalArgumentException If the channel is null or invalid
+     */
+    public static TextChannel getDonationFeedsChannel(@NotNull Guild guild) throws IllegalArgumentException {
+        String channel = DiscordBot.storageManager.getServerPreference(guild.getIdLong(), "donation-feeds-channel");
+        return guild.getTextChannelById(channel);
+    }
+
+    /**
      * Get the update channel for the selected guild
      *
      * @param guild ID of the guild to get the channel for
@@ -116,18 +127,6 @@ public class ServerSettings {
     public static TextChannel getUpdateChannel(@NotNull Guild guild) throws IllegalArgumentException {
         String channel = DiscordBot.storageManager.getServerPreference(guild.getIdLong(), "update-channel");
         return guild.getTextChannelById(channel);
-    }
-
-    /**
-     * Get the voice role for the selected guild
-     *
-     * @param guild  ID of the guild to get the channel for
-     * @return The {@link Role} for users in the voice channel
-     * @throws IllegalArgumentException If the role is null or invalid
-     */
-    public static Role getVoiceRole(@NotNull Guild guild) throws IllegalArgumentException {
-        String role = DiscordBot.storageManager.getServerPreference(guild.getIdLong(), "voice-role");
-        return guild.getRoleById(role);
     }
 
     /**

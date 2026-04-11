@@ -1,0 +1,70 @@
+[versions]
+junit = "5.12.2"
+jda = "6.2.0"
+chewtils = "2.2.1"
+trove4j = "3.1.0"
+logback = "1.5.18"
+slf4j = "2.0.17"
+sentry = "8.10.0"
+json = "20250107"
+mysql = "9.2.0"
+sqlite = "3.49.1.0"
+java-ping = "c61c496104"
+protocol = "2.9.17-SNAPSHOT"
+reflections = "0.10.2"
+prettytime = "5.0.9.Final"
+commons-net = "3.11.1"
+github = "1.330"
+apollo = "4.0.0"
+apollo-java = "0.0.2"
+
+[libraries]
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
+junit-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+
+jda = { group = "net.dv8tion", name = "JDA", version.ref = "jda" }
+chewtils = { group = "pw.chew", name = "jda-chewtils", version.ref = "chewtils" }
+trove4j = { group = "net.sf.trove4j", name = "core", version.ref = "trove4j" }
+
+slf4j = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+logback = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
+sentry-logback = { group = "io.sentry", name = "sentry-logback", version.ref = "sentry" }
+
+json = { group = "org.json", name = "json", version.ref = "json" }
+
+mysql = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql" }
+sqlite = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqlite" }
+
+java-ping = { group = "com.github.rtm516", name = "minecraft-server-ping", version.ref = "java-ping" }
+bedrock-common = { group = "com.nukkitx.protocol", name = "bedrock-common", version.ref = "protocol" }
+
+reflections = { group = "org.reflections", name = "reflections", version.ref = "reflections" }
+prettytime = { group = "org.ocpsoft.prettytime", name = "prettytime", version.ref = "prettytime" }
+commonsnet = { group = "commons-net", name = "commons-net", version.ref = "commons-net" }
+
+github = { group = "org.kohsuke", name = "github-api", version.ref = "github" }
+
+apollo = { group = "com.apollographql.java", name = "client", version.ref = "apollo-java" }
+
+[plugins]
+apollo = { id = "com.apollographql.apollo", version.ref = "apollo" }
+
+[bundles]
+jda = [
+    "jda",
+    "chewtils",
+    "trove4j",
+]
+logging = [
+    "slf4j",
+    "logback",
+    "sentry-logback",
+]
+database = [
+    "mysql",
+    "sqlite",
+]
+ping = [
+    "java-ping",
+    "bedrock-common",
+]

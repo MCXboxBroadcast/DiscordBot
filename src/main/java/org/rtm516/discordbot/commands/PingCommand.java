@@ -30,7 +30,6 @@ import br.com.azalim.mcserverping.MCPingOptions;
 import br.com.azalim.mcserverping.MCPingResponse;
 import br.com.azalim.mcserverping.MCPingUtil;
 import com.jagrosh.jdautilities.command.CommandEvent;
-import com.jagrosh.jdautilities.command.SlashCommand;
 import com.jagrosh.jdautilities.command.SlashCommandEvent;
 import com.nukkitx.protocol.bedrock.BedrockClient;
 import com.nukkitx.protocol.bedrock.BedrockPong;
@@ -39,44 +38,50 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import org.rtm516.discordbot.commands.filter.FilteredSlashCommand;
 import org.rtm516.discordbot.util.BotColors;
 import org.rtm516.discordbot.util.BotHelpers;
 import org.rtm516.discordbot.util.MessageHelper;
 import org.rtm516.discordbot.util.NetworkUtils;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public class PingCommand extends SlashCommand {
+public class PingCommand extends FilteredSlashCommand {
     private static final int TIMEOUT = 1250; // in ms, has to stay below 1500 (1.5s for each platform, total of 3s)
+    private static final Pattern PORT_PATTERN = Pattern.compile("[^0-9]");
 
     public PingCommand() {
         this.name = "ping";
         this.aliases = new String[] { "status" };
-        this.arguments = "<server>";
+        this.arguments = "<ip> [port]";
         this.help = "Ping a server to check if its accessible";
         this.guildOnly = false;
 
-        this.options = Collections.singletonList(
-            new OptionData(OptionType.STRING, "server", "The IP Address of the server you want to ping", true)
+        this.options = List.of(
+            new OptionData(OptionType.STRING, "ip", "The IP Address of the server you want to ping", true),
+            new OptionData(OptionType.INTEGER, "port", "The port of the server you want to ping", false)
+                    .setMinValue(1)
+                    .setMaxValue(65535)
         );
     }
 
     @Override
-    protected void execute(SlashCommandEvent event) {
+    protected void executeFiltered(SlashCommandEvent event) {
         // Defer to wait for us to load a response and allows for files to be uploaded
         InteractionHook interactionHook = event.deferReply().complete();
 
-        String ip = event.getOption("server").getAsString();
+        String ip = event.getOption("ip").getAsString();
+        Integer port = cleanPort(event.getOption("port") != null ? event.getOption("port").getAsString() : null);
 
-        interactionHook.editOriginalEmbeds(handle(ip)).queue();
+        interactionHook.editOriginalEmbeds(handle(ip, port)).queue();
     }
 
     @Override
@@ -89,10 +94,13 @@ public class PingCommand extends SlashCommand {
             return;
         }
 
-        event.getMessage().replyEmbeds(handle(args.get(0))).queue();
+        String ip = args.get(0);
+        Integer port = cleanPort(args.size() > 1 ? args.get(1) : null);
+
+        event.getMessage().replyEmbeds(handle(ip, port)).queue();
     }
 
-    private MessageEmbed handle(String ip) {
+    private MessageEmbed handle(String ip, Integer port) {
         // Check we were given a valid IP/domain
         if (!ip.matches("[\\w.\\-:]+")) {
             return MessageHelper.errorResponse(null, "IP invalid", "The given IP appears to be invalid and won't be queried. If you believe this is incorrect please contact an admin.");
@@ -108,24 +116,16 @@ public class PingCommand extends SlashCommand {
             ip = ip.replaceAll("https?://", "").split("/")[0];
         }
 
-        String[] ipParts = ip.split(":");
-
-        String hostname = ipParts[0];
-
-        if (NetworkUtils.isInternalIP(hostname)) {
+        if (NetworkUtils.isInternalIP(ip)) {
             return MessageHelper.errorResponse(null, "IP invalid", "The given IP appears to be an internal address and won't be queried.");
         }
 
         int jePort = 25565;
         int bePort = 19132;
 
-        if (ipParts.length > 1) {
-            try {
-                jePort = Integer.parseInt(ipParts[1]);
-                bePort = jePort;
-            } catch (NumberFormatException ignored) {
-                return MessageHelper.errorResponse(null, "Invalid port", "The port you specified is not a valid number.");
-            }
+        if (port != null) {
+            jePort = port;
+            bePort = jePort;
         }
 
         if (jePort < 1 || jePort > 65535) {
@@ -138,7 +138,7 @@ public class PingCommand extends SlashCommand {
 
         try {
             MCPingOptions options = MCPingOptions.builder()
-                    .hostname(hostname)
+                    .hostname(ip)
                     .port(jePort)
                     .timeout(TIMEOUT)
                     .build();
@@ -159,7 +159,7 @@ public class PingCommand extends SlashCommand {
 
             client.bind().join();
 
-            InetSocketAddress addressToPing = new InetSocketAddress(hostname, bePort);
+            InetSocketAddress addressToPing = new InetSocketAddress(ip, bePort);
             BedrockPong pong = client.ping(addressToPing, TIMEOUT, TimeUnit.MILLISECONDS).get();
 
             bedrockInfo = "**MOTD:** \n```\n" + BotHelpers.trim(MCPingUtil.stripColors(pong.getMotd()), 100) + (pong.getSubMotd() != null ? "\n" + BotHelpers.trim(MCPingUtil.stripColors(pong.getSubMotd()), 100) : "") + "\n```\n" +
@@ -174,11 +174,23 @@ public class PingCommand extends SlashCommand {
         }
 
         return new EmbedBuilder()
-                .setTitle("Pinging server: " + ip)
-                .addField("Java", javaInfo, false)
-                .addField("Bedrock", bedrockInfo, false)
-                .setTimestamp(Instant.now())
+                .setTitle("Pinging server " + ip)
+                .addField("Java (" + jePort + ")", javaInfo, false)
+                .addField("Bedrock (" + bePort + ")", bedrockInfo, false)
                 .setColor(success ? BotColors.SUCCESS.getColor() : BotColors.FAILURE.getColor())
                 .build();
+    }
+
+    private Integer cleanPort(String portString) {
+        if (portString == null) {
+            return null;
+        }
+
+        // Remove non-numeric characters using the compiled pattern
+        Matcher matcher = PORT_PATTERN.matcher(portString);
+        String cleaned = matcher.replaceAll("");
+
+        // Parse the cleaned string into an Integer
+        return cleaned.isEmpty() ? null : Integer.parseInt(cleaned);
     }
 }

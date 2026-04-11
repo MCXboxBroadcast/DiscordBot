@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-alpine
+FROM eclipse-temurin:21-alpine
 
 RUN adduser -h /opt/app -H -D app && \
     mkdir -p /opt/app && \
