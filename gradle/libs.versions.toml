@@ -17,6 +17,7 @@ commons-net = "3.11.1"
 github = "1.330"
 apollo = "4.0.0"
 apollo-java = "0.0.2"
+nethernettester = "1.0-SNAPSHOT"
 
 [libraries]
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
@@ -45,6 +46,8 @@ commonsnet = { group = "commons-net", name = "commons-net", version.ref = "commo
 github = { group = "org.kohsuke", name = "github-api", version.ref = "github" }
 
 apollo = { group = "com.apollographql.java", name = "client", version.ref = "apollo-java" }
+
+nethernettester = { group = "com.rtm516", name = "NetherNetTester", version.ref = "nethernettester" }
 
 [plugins]
 apollo = { id = "com.apollographql.apollo", version.ref = "apollo" }
