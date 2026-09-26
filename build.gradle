@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'application'
     alias libs.plugins.apollo
+    alias libs.plugins.shadow
 }
 
 group 'org.rtm516.discordbot'
@@ -73,24 +74,14 @@ apollo {
     }
 }
 
-jar {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
+shadowJar {
     archiveFileName = "${project.name}.jar"
 
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-
-    manifest {
-        attributes (
-            'Class-Path': configurations.runtimeClasspath.files.collect { it.getName() }.join(' '),
-            'Main-Class': 'org.rtm516.discordbot.DiscordBot'
-        )
-    }
+    mergeServiceFiles()
 }
 
-// Allow running with `./gradlew run` task
+build.dependsOn shadowJar
+
 application {
     mainClass = 'org.rtm516.discordbot.DiscordBot'
 }

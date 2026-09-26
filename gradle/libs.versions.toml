@@ -16,6 +16,7 @@ prettytime = "5.0.9.Final"
 commons-net = "3.11.1"
 github = "1.330"
 apollo = "4.0.0"
+shadow = "8.3.9"
 apollo-java = "0.0.2"
 nethernettester = "1.0-SNAPSHOT"
 
@@ -51,6 +52,7 @@ nethernettester = { group = "com.rtm516", name = "NetherNetTester", version.ref 
 
 [plugins]
 apollo = { id = "com.apollographql.apollo", version.ref = "apollo" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 
 [bundles]
 jda = [
