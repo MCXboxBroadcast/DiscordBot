@@ -41,8 +41,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class gives easy methods for accessing stored data about a server
@@ -128,6 +130,33 @@ public class ServerSettings {
     public static Role getDonatorRole(@NotNull Guild guild) {
         String role = getId(guild, "donator-role");
         return role != null ? guild.getRoleById(role) : null;
+    }
+
+    /**
+     * Get the users manually flagged as donators for the selected guild
+     *
+     * @param guild The guild to get the users for
+     * @return The IDs of the flagged users
+     */
+    @NotNull
+    public static Set<Long> getManualDonators(@NotNull Guild guild) {
+        Set<Long> ids = new HashSet<>();
+        for (String id : getList(guild.getIdLong(), "manual-donators")) {
+            if (id.matches("[0-9]+")) {
+                ids.add(Long.parseLong(id));
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * Set the users manually flagged as donators for the selected guild
+     *
+     * @param guild The guild to set the users for
+     * @param ids The IDs of the flagged users
+     */
+    public static void setManualDonators(@NotNull Guild guild, Set<Long> ids) {
+        setList(guild.getIdLong(), "manual-donators", ids.stream().map(String::valueOf).toList());
     }
 
     /**

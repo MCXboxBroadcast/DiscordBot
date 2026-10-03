@@ -71,10 +71,11 @@ public class VerifyCommand extends SlashCommand {
             return;
         }
 
-        if (event.getMember().getRoles().contains(role)) {
+        GithubLink link = DiscordBot.storageManager.getGithubLink(id);
+        if (link != null && event.getMember().getRoles().contains(role)) {
             reply(event, new EmbedBuilder()
                     .setTitle("Already verified")
-                    .setDescription("You already have the " + role.getAsMention() + " role, thank you for sponsoring!")
+                    .setDescription("Your GitHub account [" + link.githubLogin() + "](https://github.com/" + link.githubLogin() + ") is linked and you have the " + role.getAsMention() + " role, thank you for sponsoring!")
                     .setColor(BotColors.SUCCESS.getColor()));
             return;
         }
@@ -87,9 +88,12 @@ public class VerifyCommand extends SlashCommand {
                 .setFooter("The link expires in 5 minutes")
                 .setColor(BotColors.NEUTRAL.getColor());
 
-        GithubLink link = DiscordBot.storageManager.getGithubLink(id);
         if (link != null) {
             embed.addField("Linked GitHub account", "[" + link.githubLogin() + "](https://github.com/" + link.githubLogin() + ")\nThe role is given automatically within 30 minutes of sponsoring, or use the link above to check now.", false);
+        }
+
+        if (ServerSettings.getManualDonators(event.getGuild()).contains(id)) {
+            embed.addField("Manually flagged", "You are manually flagged as a donator, so linking your GitHub account won't make a difference to your role.", false);
         }
 
         reply(event, embed);

@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -229,6 +230,7 @@ public class SponsorUtil {
 
     private static void updateRoles(Role role, List<GithubLink> links, Map<Long, Sponsor> active) {
         Guild guild = role.getGuild();
+        Set<Long> manualDonators = ServerSettings.getManualDonators(guild);
 
         for (GithubLink link : links) {
             Member member = guild.getMemberById(link.discordId());
@@ -236,18 +238,67 @@ public class SponsorUtil {
                 continue;
             }
 
-            Sponsor sponsor = active.get(link.githubId());
-            boolean eligible = sponsor != null && sponsor.eligible();
+            boolean eligible = getStatus(link.discordId(), link, manualDonators, active).shouldHaveRole();
             boolean hasRole = member.getRoles().contains(role);
 
             if (eligible && !hasRole) {
                 guild.addRoleToMember(member, role).queue();
-                sendDM(member, "Thank you for sponsoring me. You have been given the " + role.getName() + " role in the " + guild.getName() + " Discord server!");
+                notifyRoleAdded(member, role);
             } else if (!eligible && hasRole) {
                 guild.removeRoleFromMember(member, role).queue();
-                sendDM(member, "Your sponsorship has expired. You have been removed from the " + role.getName() + " role in the " + guild.getName() + " Discord server! If you sponsor again at <" + SPONSOR_LINK + "> it will be given back automatically.");
+                notifyRoleRemoved(member, role, true);
             }
         }
+    }
+
+    /**
+     * DM a member to let them know they have been given the donator role
+     *
+     * @param member The member given the role
+     * @param role The donator role
+     */
+    public static void notifyRoleAdded(Member member, Role role) {
+        sendDM(member, "Thank you for sponsoring me. You have been given the " + role.getName() + " role in the " + role.getGuild().getName() + " Discord server!");
+    }
+
+    /**
+     * DM a member to let them know the donator role has been removed
+     *
+     * @param member The member the role was removed from
+     * @param role The donator role
+     * @param linked If the member has a linked GitHub account
+     */
+    public static void notifyRoleRemoved(Member member, Role role, boolean linked) {
+        String removed = "You have been removed from the " + role.getName() + " role in the " + role.getGuild().getName() + " Discord server";
+        if (linked) {
+            sendDM(member, "Your sponsorship has expired. " + removed + "! If you sponsor again at <" + SPONSOR_LINK + "> it will be given back automatically.");
+        } else {
+            sendDM(member, removed + " as there is no GitHub sponsorship linked to your account. If you are sponsoring at <" + SPONSOR_LINK + ">, run `/verify` in the server to link your GitHub account and get it back.");
+        }
+    }
+
+    /**
+     * Work out why a user should or shouldn't have the donator role
+     *
+     * @param discordId The Discord user ID
+     * @param link The user's GitHub link or null if not linked
+     * @param manualDonators The users manually flagged as donators
+     * @param active The active sponsors
+     * @return The user's donator status
+     */
+    public static DonatorStatus getStatus(long discordId, GithubLink link, Set<Long> manualDonators, Map<Long, Sponsor> active) {
+        if (link != null) {
+            Sponsor sponsor = active.get(link.githubId());
+            if (sponsor != null && sponsor.eligible()) {
+                return DonatorStatus.SPONSOR;
+            }
+        }
+
+        if (manualDonators.contains(discordId)) {
+            return DonatorStatus.MANUAL;
+        }
+
+        return link != null ? DonatorStatus.NOT_SPONSORING : DonatorStatus.NOT_LINKED;
     }
 
     private static List<Role> getDonatorRoles() {
@@ -371,7 +422,7 @@ public class SponsorUtil {
     }
 
     /**
-     * Unlink a user's GitHub account and remove their donator roles
+     * Unlink a user's GitHub account and remove their donator roles, unless manually flagged
      *
      * @param discordId The Discord user ID
      * @return If the user had a linked account
@@ -382,6 +433,10 @@ public class SponsorUtil {
         }
 
         for (Role role : getDonatorRoles()) {
+            if (ServerSettings.getManualDonators(role.getGuild()).contains(discordId)) {
+                continue;
+            }
+
             Member member = role.getGuild().getMemberById(discordId);
             if (member != null && member.getRoles().contains(role)) {
                 role.getGuild().removeRoleFromMember(member, role).queue();
@@ -389,6 +444,23 @@ public class SponsorUtil {
         }
 
         return true;
+    }
+
+    public enum DonatorStatus {
+        SPONSOR(true),
+        MANUAL(true),
+        NOT_SPONSORING(false),
+        NOT_LINKED(false);
+
+        private final boolean shouldHaveRole;
+
+        DonatorStatus(boolean shouldHaveRole) {
+            this.shouldHaveRole = shouldHaveRole;
+        }
+
+        public boolean shouldHaveRole() {
+            return shouldHaveRole;
+        }
     }
 
     public record VerificationResult(boolean success, String title, String message) {
