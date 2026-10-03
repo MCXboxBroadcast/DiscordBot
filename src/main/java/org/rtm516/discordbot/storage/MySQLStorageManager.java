@@ -33,11 +33,14 @@ import org.rtm516.discordbot.util.PropertiesManager;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MySQLStorageManager extends AbstractStorageManager {
 
@@ -52,7 +55,7 @@ public class MySQLStorageManager extends AbstractStorageManager {
         Statement createTables = connection.createStatement();
         createTables.executeUpdate("CREATE TABLE IF NOT EXISTS `preferences` (`id` INT NOT NULL AUTO_INCREMENT, `server` BIGINT NOT NULL, `key` VARCHAR(32), `value` TEXT NOT NULL, PRIMARY KEY(`id`), UNIQUE KEY `pref_constraint` (`server`,`key`));");
         createTables.executeUpdate("CREATE TABLE IF NOT EXISTS `persistent_roles` (`id` INT NOT NULL AUTO_INCREMENT, `server` BIGINT NOT NULL, `user` BIGINT NOT NULL, `role` BIGINT NOT NULL, PRIMARY KEY(`id`), UNIQUE KEY `role_constraint` (`server`,`user`,`role`));");
-        createTables.executeUpdate("CREATE TABLE IF NOT EXISTS `github_links` (`id` INT NOT NULL AUTOINCREMENT, `user` BIGINT NOT NULL, `github` VARCHAR(32), PRIMARY KEY(`id`), UNIQUE KEY `github_constraint` (`user`,`github`));");
+        createTables.executeUpdate("CREATE TABLE IF NOT EXISTS `github_sponsor_links` (`user` BIGINT NOT NULL, `github_id` BIGINT NOT NULL, `github_login` VARCHAR(39) NOT NULL, PRIMARY KEY(`user`), UNIQUE KEY `github_id_constraint` (`github_id`));");
 
         createTables.close();
     }
@@ -143,46 +146,95 @@ public class MySQLStorageManager extends AbstractStorageManager {
     }
 
     @Override
-    public String getGithubUsername(long user) {
+    public GithubLink getGithubLink(long discordId) {
         checkConnection();
-        try {
-            Statement getPreferenceValue = connection.createStatement();
-            ResultSet rs = getPreferenceValue.executeQuery("SELECT `github` FROM `github_links` WHERE `user`=" + user + ";");
+        try (PreparedStatement statement = connection.prepareStatement("SELECT `user`, `github_id`, `github_login` FROM `github_sponsor_links` WHERE `user`=?;")) {
+            statement.setLong(1, discordId);
+            ResultSet rs = statement.executeQuery();
 
             if (rs.next()) {
-                return rs.getString("github");
+                return new GithubLink(rs.getLong("user"), rs.getLong("github_id"), rs.getString("github_login"));
             }
-
-            getPreferenceValue.close();
         } catch (SQLException ignored) { }
 
         return null;
     }
 
     @Override
-    public long getDiscordId(String username) {
+    public GithubLink getGithubLinkByGithubId(long githubId) {
         checkConnection();
-        try {
-            Statement getPreferenceValue = connection.createStatement();
-            ResultSet rs = getPreferenceValue.executeQuery("SELECT `user` FROM `github_links` WHERE `github`='" + username + "';");
+        try (PreparedStatement statement = connection.prepareStatement("SELECT `user`, `github_id`, `github_login` FROM `github_sponsor_links` WHERE `github_id`=?;")) {
+            statement.setLong(1, githubId);
+            ResultSet rs = statement.executeQuery();
 
             if (rs.next()) {
-                return rs.getLong("user");
+                return new GithubLink(rs.getLong("user"), rs.getLong("github_id"), rs.getString("github_login"));
             }
-
-            getPreferenceValue.close();
         } catch (SQLException ignored) { }
 
-        return 0L;
+        return null;
     }
 
     @Override
-    public void setGithubUsername(long user, String username) {
+    public List<GithubLink> getGithubLinks() {
         checkConnection();
-        try {
-            Statement addGithubLink = connection.createStatement();
-            addGithubLink.executeUpdate("INSERT INTO `github_links` (`user`, `github`) VALUES (" + user + ", '" + username + "') ON DUPLICATE KEY UPDATE `github`='" + username + "';");
-            addGithubLink.close();
+        List<GithubLink> links = new ArrayList<>();
+
+        try (PreparedStatement statement = connection.prepareStatement("SELECT `user`, `github_id`, `github_login` FROM `github_sponsor_links`;")) {
+            ResultSet rs = statement.executeQuery();
+
+            while (rs.next()) {
+                links.add(new GithubLink(rs.getLong("user"), rs.getLong("github_id"), rs.getString("github_login")));
+            }
+        } catch (SQLException ignored) { }
+
+        return links;
+    }
+
+    @Override
+    public void setGithubLink(long discordId, long githubId, String githubLogin) {
+        checkConnection();
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO `github_sponsor_links` (`user`, `github_id`, `github_login`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `github_id`=VALUES(`github_id`), `github_login`=VALUES(`github_login`);")) {
+            statement.setLong(1, discordId);
+            statement.setLong(2, githubId);
+            statement.setString(3, githubLogin);
+            statement.executeUpdate();
+        } catch (SQLException ignored) { }
+    }
+
+    @Override
+    public boolean removeGithubLink(long discordId) {
+        checkConnection();
+        try (PreparedStatement statement = connection.prepareStatement("DELETE FROM `github_sponsor_links` WHERE `user`=?;")) {
+            statement.setLong(1, discordId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException ignored) { }
+
+        return false;
+    }
+
+    @Override
+    public Map<Long, String> getLegacyGithubLinks() {
+        checkConnection();
+        Map<Long, String> links = new HashMap<>();
+
+        // The table won't exist if it has already been migrated
+        try (PreparedStatement statement = connection.prepareStatement("SELECT `user`, `github` FROM `github_links`;")) {
+            ResultSet rs = statement.executeQuery();
+
+            while (rs.next()) {
+                links.put(rs.getLong("user"), rs.getString("github"));
+            }
+        } catch (SQLException ignored) { }
+
+        return links;
+    }
+
+    @Override
+    public void dropLegacyGithubLinks() {
+        checkConnection();
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DROP TABLE IF EXISTS `github_links`;");
         } catch (SQLException ignored) { }
     }
 }

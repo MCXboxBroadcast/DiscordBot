@@ -1,0 +1,31 @@
+query SponsorshipsQuery($cursor: String) {
+  viewer {
+    sponsorshipsAsMaintainer(first: 100, after: $cursor, includePrivate: true, activeOnly: false, orderBy: { field: CREATED_AT, direction: ASC }) {
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      nodes {
+        createdAt
+        tierSelectedAt
+        isActive
+        isOneTimePayment
+        tier {
+          monthlyPriceInCents
+          isOneTime
+        }
+        sponsorEntity {
+          __typename
+          ... on User {
+            databaseId
+            login
+          }
+          ... on Organization {
+            databaseId
+            login
+          }
+        }
+      }
+    }
+  }
+}

@@ -26,6 +26,7 @@
 package org.rtm516.discordbot.storage;
 
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -108,13 +109,43 @@ public class ServerSettings {
     /**
      * Get the donation feeds channel for the selected guild
      *
-     * @param guild ID of the guild to get the channel for
-     * @return The {@link TextChannel} for logs
-     * @throws IllegalArgumentException If the channel is null or invalid
+     * @param guild The guild to get the channel for
+     * @return The {@link TextChannel} for donation feeds or null if not set
      */
-    public static TextChannel getDonationFeedsChannel(@NotNull Guild guild) throws IllegalArgumentException {
-        String channel = DiscordBot.storageManager.getServerPreference(guild.getIdLong(), "donation-feeds-channel");
-        return guild.getTextChannelById(channel);
+    @Nullable
+    public static TextChannel getDonationFeedsChannel(@NotNull Guild guild) {
+        String channel = getId(guild, "donation-feeds-channel");
+        return channel != null ? guild.getTextChannelById(channel) : null;
+    }
+
+    /**
+     * Get the donator role for the selected guild
+     *
+     * @param guild The guild to get the role for
+     * @return The donator {@link Role} or null if not set
+     */
+    @Nullable
+    public static Role getDonatorRole(@NotNull Guild guild) {
+        String role = getId(guild, "donator-role");
+        return role != null ? guild.getRoleById(role) : null;
+    }
+
+    /**
+     * Get a preference as a snowflake ID, allowing for mentions such as {@code <#id>} or {@code <@&id>}
+     *
+     * @param guild The guild to get the preference for
+     * @param key The preference key to get
+     * @return The ID or null if not set
+     */
+    @Nullable
+    private static String getId(@NotNull Guild guild, String key) {
+        String value = DiscordBot.storageManager.getServerPreference(guild.getIdLong(), key);
+        if (value == null) {
+            return null;
+        }
+
+        String id = value.replaceAll("[^0-9]", "");
+        return id.isEmpty() ? null : id;
     }
 
     /**

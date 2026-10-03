@@ -29,6 +29,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractStorageManager {
 
@@ -84,8 +85,55 @@ public abstract class AbstractStorageManager {
      */
     public abstract List<Role> getPersistentRoles(Member member);
 
-    public abstract String getGithubUsername(long user);
-    public abstract long getDiscordId(String username);
+    /**
+     * Get the GitHub link for a Discord user
+     *
+     * @param discordId Discord user ID
+     * @return The {@link GithubLink} or null if not linked
+     */
+    public abstract GithubLink getGithubLink(long discordId);
 
-    public abstract void setGithubUsername(long user, String username);
+    /**
+     * Get the GitHub link for a GitHub account
+     *
+     * @param githubId GitHub account ID
+     * @return The {@link GithubLink} or null if not linked
+     */
+    public abstract GithubLink getGithubLinkByGithubId(long githubId);
+
+    /**
+     * Get all GitHub links
+     *
+     * @return List of all {@link GithubLink}s
+     */
+    public abstract List<GithubLink> getGithubLinks();
+
+    /**
+     * Link a Discord user to a GitHub account, replacing any existing link for the Discord user
+     *
+     * @param discordId Discord user ID
+     * @param githubId GitHub account ID
+     * @param githubLogin GitHub username
+     */
+    public abstract void setGithubLink(long discordId, long githubId, String githubLogin);
+
+    /**
+     * Remove the GitHub link for a Discord user
+     *
+     * @param discordId Discord user ID
+     * @return true if a link was removed
+     */
+    public abstract boolean removeGithubLink(long discordId);
+
+    /**
+     * Get the legacy username based GitHub links that need migrating
+     *
+     * @return Map of Discord user ID to GitHub username, empty if there is nothing to migrate
+     */
+    public abstract Map<Long, String> getLegacyGithubLinks();
+
+    /**
+     * Drop the legacy username based GitHub links table once migrated
+     */
+    public abstract void dropLegacyGithubLinks();
 }

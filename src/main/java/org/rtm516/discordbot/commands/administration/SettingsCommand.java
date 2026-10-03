@@ -75,7 +75,8 @@ public class SettingsCommand extends SlashCommand {
                         .addChoice("Roles", "roles")
                         .addChoice("RSS Feeds", "rss-feeds")
                         .addChoice("Update channel", "update-channel")
-                        .addChoice("Donation feeds channel", "donation-feeds-channel"),
+                        .addChoice("Donation feeds channel", "donation-feeds-channel")
+                        .addChoice("Donator role", "donator-role"),
 
                 new OptionData(OptionType.STRING, "value", "The value to set")
         );

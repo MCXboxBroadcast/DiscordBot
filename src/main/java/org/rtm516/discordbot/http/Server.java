@@ -27,6 +27,7 @@ package org.rtm516.discordbot.http;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import org.rtm516.discordbot.DiscordBot;
 import org.rtm516.discordbot.util.SponsorUtil;
 
 import java.io.IOException;
@@ -44,20 +45,24 @@ public class Server {
     public Server() throws Exception {
         server = HttpServer.create(new InetSocketAddress("0.0.0.0", 3000), 0);
         server.createContext("/", exchange -> {
-            if (exchange.getRequestURI().getQuery() == null) {
-                respond("Invalid request", exchange);
-                return;
-            }
+            try {
+                Map<String, String> queryParams = queryToMap(exchange.getRequestURI().getQuery());
+                if (queryParams == null) {
+                    respond(SponsorUtil.VerificationResult.error("Invalid request"), exchange);
+                    return;
+                }
 
-            Map<String, String> queryParams = queryToMap(exchange.getRequestURI().getQuery());
+                String code = queryParams.get("code");
+                UUID state = parseUUID(queryParams.get("state"));
 
-            String code = queryParams.getOrDefault("code", null);
-            String state = queryParams.getOrDefault("state", null);
-
-            if (code == null || state == null) {
-                respond("Invalid request", exchange);
-            } else {
-                respond(SponsorUtil.linkGithub(UUID.fromString(state), code), exchange);
+                if (code == null || code.isEmpty() || state == null) {
+                    respond(SponsorUtil.VerificationResult.error("Invalid request"), exchange);
+                } else {
+                    respond(SponsorUtil.verify(state, code), exchange);
+                }
+            } catch (Exception e) {
+                DiscordBot.LOGGER.error("Failed to handle verification request", e);
+                respond(SponsorUtil.VerificationResult.error("An error occurred while verifying your account."), exchange);
             }
         });
         server.setExecutor(null); // creates a default executor
@@ -71,7 +76,19 @@ public class Server {
         server.stop(0);
     }
 
-    private void respond(String message, HttpExchange exchange) throws IOException {
+    private static UUID parseUUID(String uuid) {
+        if (uuid == null) {
+            return null;
+        }
+
+        try {
+            return UUID.fromString(uuid);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private void respond(SponsorUtil.VerificationResult result, HttpExchange exchange) throws IOException {
         String response = """
                 <!DOCTYPE html>
                 <html>
@@ -89,14 +106,21 @@ public class Server {
                       -webkit-font-smoothing: antialiased;
                       -moz-osx-font-smoothing: grayscale;
                       display: flex;
-                      justify-content: center;
+                      flex-direction: column;
+                      align-items: center;
+                      text-align: center;
+                      padding: 2em;
+                    }
+                    h1 {
+                      color: %s;
                     }
                   </style>
                 </head>
                 <body>
                     <h1>%s</h1>
+                    <p>%s</p>
                 </body>
-                </html>""".formatted(message);
+                </html>""".formatted(result.success() ? "#4CAF50" : "#FF0000", result.title(), result.message());
 
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);

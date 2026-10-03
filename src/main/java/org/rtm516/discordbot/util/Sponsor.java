@@ -25,45 +25,83 @@
 
 package org.rtm516.discordbot.util;
 
-import com.rtm516.discordbot.graphql.SponsorsQuery;
+import com.rtm516.discordbot.graphql.SponsorshipsQuery;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.time.Instant;
 
+/**
+ * A sponsorship to the bot's GitHub account
+ *
+ * @param githubId The sponsor's GitHub account ID
+ * @param username The sponsor's GitHub username
+ * @param amount The sponsorship amount in dollars
+ * @param oneTime If the sponsorship was a one-time payment
+ * @param githubActive If GitHub reports the sponsorship as active
+ * @param started When the sponsorship or its current tier started
+ */
 public record Sponsor(
-        String type,
+        long githubId,
         String username,
-        boolean active,
-        boolean oneTime,
         float amount,
+        boolean oneTime,
+        boolean githubActive,
         Instant started
 ) {
-    public static Sponsor from(SponsorsQuery.Node node) {
-        switch (node.__typename) {
-            case "User":
-                var userSponsorInfo = node.onUser.sponsorshipsAsSponsor.nodes.get(0);
-                return new Sponsor(
-                        node.__typename,
-                        node.onUser.login,
-                        userSponsorInfo.isActive,
-                        userSponsorInfo.isOneTimePayment,
-                        (userSponsorInfo.tier != null ? userSponsorInfo.tier.monthlyPriceInCents : node.onUser.sponsorshipsAsSponsor.totalRecurringMonthlyPriceInCents)/ 100f,
-                        Instant.parse((userSponsorInfo.tierSelectedAt != null ? (String)userSponsorInfo.tierSelectedAt : (String)userSponsorInfo.createdAt))
-                );
-            case "Organization":
-                var orgSponsorInfo = node.onOrganization.sponsorshipsAsSponsor.nodes.get(0);
-                return new Sponsor(
-                        node.__typename,
-                        node.onOrganization.login,
-                        orgSponsorInfo.isActive,
-                        orgSponsorInfo.isOneTimePayment,
-                        (orgSponsorInfo.tier != null ? orgSponsorInfo.tier.monthlyPriceInCents : node.onOrganization.sponsorshipsAsSponsor.totalRecurringMonthlyPriceInCents)/ 100f,
-                        Instant.parse((orgSponsorInfo.tierSelectedAt != null ? (String)orgSponsorInfo.tierSelectedAt : (String)orgSponsorInfo.createdAt))
-                );
-            default:
-                return null;
+    public static Sponsor from(SponsorshipsQuery.Node node) {
+        SponsorshipsQuery.SponsorEntity entity = node.sponsorEntity;
+        if (entity == null) {
+            return null;
         }
+
+        Integer githubId;
+        String username;
+        if (entity.onUser != null) {
+            githubId = entity.onUser.databaseId;
+            username = entity.onUser.login;
+        } else if (entity.onOrganization != null) {
+            githubId = entity.onOrganization.databaseId;
+            username = entity.onOrganization.login;
+        } else {
+            return null;
+        }
+
+        if (githubId == null) {
+            return null;
+        }
+
+        Instant started = Instant.parse((String) node.createdAt);
+        if (node.tierSelectedAt != null) {
+            Instant tierSelectedAt = Instant.parse((String) node.tierSelectedAt);
+            if (tierSelectedAt.isAfter(started)) {
+                started = tierSelectedAt;
+            }
+        }
+
+        boolean oneTime = Boolean.TRUE.equals(node.isOneTimePayment) || (node.tier != null && Boolean.TRUE.equals(node.tier.isOneTime));
+        float amount = node.tier != null && node.tier.monthlyPriceInCents != null ? node.tier.monthlyPriceInCents / 100f : 0f;
+
+        return new Sponsor(githubId, username, amount, oneTime, Boolean.TRUE.equals(node.isActive), started);
+    }
+
+    /**
+     * One-time sponsorships are active for {@link SponsorUtil#ONE_TIME_DURATION}, monthly ones until cancelled
+     *
+     * @return If the sponsorship is active
+     */
+    public boolean active() {
+        if (oneTime) {
+            return started.plus(SponsorUtil.ONE_TIME_DURATION).isAfter(Instant.now());
+        }
+        return githubActive;
+    }
+
+    /**
+     * @return If the sponsorship should be given the donator role
+     */
+    public boolean eligible() {
+        return active() && amount >= SponsorUtil.DONATE_MIN;
     }
 
     public String toString() {
@@ -79,11 +117,11 @@ public record Sponsor(
                 .build();
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Sponsor sponsor = (Sponsor) obj;
-        return Float.compare(sponsor.amount, amount) == 0 && active == sponsor.active && oneTime == sponsor.oneTime && type.equals(sponsor.type) && username.equals(sponsor.username) && started.equals(sponsor.started);
+    public MessageEmbed toStoppedEmbed() {
+        return new EmbedBuilder()
+                .setAuthor(username, "https://github.com/" + username, "https://github.com/" + username + ".png")
+                .setDescription("Stopped sponsoring you")
+                .setColor(BotColors.FAILURE.getColor())
+                .build();
     }
 }
